@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Read(./**)",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "mcp__dashi-channel",
+      "mcp__dashi-channel__reply",
+      "mcp__dashi-channel__react",
+      "mcp__dashi-channel__edit_message",
+      "mcp__dashi-channel__download_attachment",
+      "mcp__dashi-channel__status",
+      "WebFetch",
+      "WebSearch"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(curl * | bash)",
+      "Bash(sudo *)"
+    ],
+    "additionalDirectories": [
+      "."
+    ]
+  }
+}
