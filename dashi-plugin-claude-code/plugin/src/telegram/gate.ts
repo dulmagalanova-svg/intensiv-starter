@@ -52,12 +52,17 @@ export function gateTelegramMessage(input: GateInput, config: AppConfig): GateDe
     return { kind: 'drop', reason: 'sender_not_allowed' }
   }
 
-  // Defensive secondary check. In Telegram DMs chat.id == user.id, so this
-  // is rarely tripped — but if a future config drift adds a user without the
-  // matching chat, we'd rather drop than deliver to an unverified chat.
-  const allowedChats = toStringSet(config.allowed_chat_ids)
-  if (input.chatId === undefined || !allowedChats.has(input.chatId)) {
-    return { kind: 'drop', reason: 'chat_not_allowed' }
+  // Defensive secondary check. In Telegram DMs chat.id == user.id, so an
+  // already-allowlisted sender writing from their own DM is implicitly
+  // trusted — we don't also require their id in allowed_chat_ids (otherwise
+  // every student whose chat is their own id would be dropped as
+  // chat_not_allowed, since allowed_chat_ids isn't populated from env).
+  // For any other chat id we still require an explicit allowlist entry.
+  if (input.chatId !== input.senderId) {
+    const allowedChats = toStringSet(config.allowed_chat_ids)
+    if (input.chatId === undefined || !allowedChats.has(input.chatId)) {
+      return { kind: 'drop', reason: 'chat_not_allowed' }
+    }
   }
 
   return { kind: 'allow', senderId: input.senderId, chatId: input.chatId }
@@ -67,9 +72,14 @@ export function gateTelegramMessage(input: GateInput, config: AppConfig): GateDe
 // from config instead of the on-disk allowlist.json. Used by reply/react/
 // edit_message/sendDocument to ensure tool calls cannot leak to chats the
 // inbound gate would never deliver from.
+//
+// In DMs chat.id == user.id, so a chat that equals an allowlisted user id is
+// implicitly trusted (that's the user's own DM). Otherwise require an explicit
+// allowed_chat_ids entry.
 export function assertAllowedChat(chatId: string, config: AppConfig): void {
-  const allowed = toStringSet(config.allowed_chat_ids)
-  if (!allowed.has(chatId)) {
+  const allowedChats = toStringSet(config.allowed_chat_ids)
+  const allowedUsers = toStringSet(config.allowed_user_ids)
+  if (!allowedChats.has(chatId) && !allowedUsers.has(chatId)) {
     throw new Error(`chat ${chatId} is not allowlisted — add to allowed_chat_ids`)
   }
 }
