@@ -3,4 +3,4 @@ bun.lockb
 bun.lock
 *.log
 .env
-state/
+/state/
