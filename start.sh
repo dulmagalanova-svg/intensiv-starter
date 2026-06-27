@@ -57,6 +57,22 @@ set -a
 . "$ENV_FILE"
 set +a
 
+# 4.5. Выдаём агенту права, чтобы он отвечал в Telegram БЕЗ подтверждений.
+#      Claude Code читает права из ~/.claude/settings.json (а не из settings.json
+#      в корне репо), поэтому сливаем туда нужные permissions. Слияние безопасное:
+#      только добавляет права (union), твои существующие настройки не трогает.
+if command -v node >/dev/null 2>&1; then
+  if node "$ROOT/scripts/merge-settings.js" "$ROOT/settings.json" "$HOME/.claude/settings.json" "$ROOT"; then
+    :
+  else
+    echo "Внимание: не удалось настроить права автоматически."
+    echo "Тогда при первом вопросе 'Do you want to proceed?' выбери вариант 2 (don't ask again)."
+  fi
+else
+  echo "Внимание: не найден node — права не настроены автоматически."
+  echo "При первом вопросе 'Do you want to proceed?' выбери вариант 2 (don't ask again)."
+fi
+
 # 5. Запускаем агента из папки plugin (чтобы Claude Code нашёл CLAUDE.md
 #    в корне репозитория, поднявшись вверх по дереву).
 echo "Запускаю агента... (для остановки нажми Ctrl+C)"
